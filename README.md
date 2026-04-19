@@ -11,6 +11,20 @@ Before editing `settings.db`, make a backup of:
 
 Logitech G Hub can overwrite changes if it is still running when you save. It also won't update unless you completely exit out of lghub and relaunch.
 
+## Requirements
+
+- Python 3.10+ recommended
+- Windows
+- Tkinter available in your Python install
+
+## Run
+
+From the project folder run this code to launch:
+
+```python ghub_macro_browser.py```
+
+Or download the exe zip file if you are less technically inclined.
+
 ## What This Does
 
 I made this because editing larger sets of macros directly in G Hub is slow and tedious, especially when you want to make the same kind of changes across many macros.
