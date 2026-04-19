@@ -36,7 +36,7 @@ It works directly with G Hub macro data and, in my testing, G Hub accepts the ch
 - Sequence component editor
 - Drag-and-drop component reordering
 - Bulk delay editing
-- Bulk key replacement for sequence macros
+- Bulk key replacement for sequence macros - example changing WASD to ARROW keys on all filtered macros
 - Macro duplication and creation
 - G-key assignment tools
 - Keystroke recording for sequence macros
