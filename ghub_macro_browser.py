@@ -269,7 +269,7 @@ class GHubMacroBrowserApp:
             "macro_type": tk.StringVar(),
             "macro_id": tk.StringVar(),
             "sequence_default_delay": tk.StringVar(),
-            "sequence_use_default_delay": tk.BooleanVar(value=False),
+            "sequence_use_default_delay": tk.BooleanVar(value=True),
             "sequence_use_simple_actions": tk.BooleanVar(value=False),
             "show_up_down": tk.BooleanVar(value=False),
             "component_kind": tk.StringVar(),
@@ -434,6 +434,10 @@ class GHubMacroBrowserApp:
         new_macro_button.grid(row=0, column=7, padx=(8, 0), pady=2)
         self._add_tooltip(new_macro_button, "Create a new macro near the current editable macro selection.")
 
+        delete_macro_button = ttk.Button(action_row, text="Delete Macro", command=self.delete_selected_macro)
+        delete_macro_button.grid(row=0, column=8, padx=(8, 0), pady=2)
+        self._add_tooltip(delete_macro_button, "Delete the selected macro and any assignments that point to it.")
+
         filter_row = ttk.Frame(top)
         filter_row.grid(row=1, column=0, sticky="ew")
         filter_row.columnconfigure(1, weight=2)
@@ -485,11 +489,16 @@ class GHubMacroBrowserApp:
         duplicate_button = ttk.Button(filter_row, text="Duplicate Filtered", command=self.duplicate_filtered_macros)
         duplicate_button.grid(row=0, column=10, padx=4, pady=2)
         self._add_tooltip(duplicate_button, "Duplicate every currently filtered macro.")
-        ttk.Checkbutton(
+        delete_originals_check = ttk.Checkbutton(
             filter_row,
             text="Delete originals",
             variable=self.vars["delete_originals_after_duplicate"],
-        ).grid(row=0, column=11, padx=(8, 0), pady=2)
+        )
+        delete_originals_check.grid(row=0, column=11, padx=(8, 0), pady=2)
+        self._add_tooltip(
+            delete_originals_check,
+            "When duplicating filtered macros, remove the originals after the copies are created.",
+        )
 
         ttk.Label(top, textvariable=self.status_var).grid(
             row=2, column=0, columnspan=12, sticky="w", pady=(6, 0)
@@ -554,6 +563,8 @@ class GHubMacroBrowserApp:
             }:
                 entry.configure(state="readonly")
             entry.grid(row=row, column=col + 1, sticky="ew", padx=4, pady=4)
+            if key == "macro_name":
+                self.macro_name_entry = entry
 
         ttk.Label(right, text="Sequence summary").grid(row=5, column=0, sticky="w", padx=4, pady=(4, 4))
         self.summary_entry = ttk.Entry(
@@ -613,26 +624,37 @@ class GHubMacroBrowserApp:
             textvariable=self.vars["assignment_button_slot"],
             width=8,
         ).pack(side="left", padx=4)
-        ttk.Checkbutton(
+        m1_check = ttk.Checkbutton(
             assignment_controls,
             text="M1",
             variable=self.assignment_memory_vars["m1"],
-        ).pack(side="left", padx=2)
-        ttk.Checkbutton(
+        )
+        m1_check.pack(side="left", padx=2)
+        self._add_tooltip(m1_check, "Assign the selected macro to the M1 memory profile.")
+
+        m2_check = ttk.Checkbutton(
             assignment_controls,
             text="M2",
             variable=self.assignment_memory_vars["m2"],
-        ).pack(side="left", padx=2)
-        ttk.Checkbutton(
+        )
+        m2_check.pack(side="left", padx=2)
+        self._add_tooltip(m2_check, "Assign the selected macro to the M2 memory profile.")
+
+        m3_check = ttk.Checkbutton(
             assignment_controls,
             text="M3",
             variable=self.assignment_memory_vars["m3"],
-        ).pack(side="left", padx=2)
-        ttk.Checkbutton(
+        )
+        m3_check.pack(side="left", padx=2)
+        self._add_tooltip(m3_check, "Assign the selected macro to the M3 memory profile.")
+
+        gshift_check = ttk.Checkbutton(
             assignment_controls,
             text="G-Shift",
             variable=self.assignment_shifted_var,
-        ).pack(side="left", padx=(8, 2))
+        )
+        gshift_check.pack(side="left", padx=(8, 2))
+        self._add_tooltip(gshift_check, "Assign the selected macro to the G-Shift layer for the chosen slot.")
         assign_button = ttk.Button(
             assignment_controls,
             text="Assign Selected Macro",
@@ -665,26 +687,43 @@ class GHubMacroBrowserApp:
         ttk.Entry(meta, textvariable=self.vars["sequence_default_delay"], width=10).grid(
             row=0, column=1, sticky="w", padx=4, pady=4
         )
-        ttk.Checkbutton(
+        use_default_delay_check = ttk.Checkbutton(
             meta,
             text="Use default delay",
             variable=self.vars["sequence_use_default_delay"],
-        ).grid(row=0, column=2, sticky="w", padx=4, pady=4)
-        ttk.Checkbutton(
+        )
+        use_default_delay_check.grid(row=0, column=2, sticky="w", padx=4, pady=4)
+        self._add_tooltip(
+            use_default_delay_check,
+            "Use the sequence default delay value when the macro runs and when recording with default timing.",
+        )
+
+        use_simple_actions_check = ttk.Checkbutton(
             meta,
             text="Use simple actions",
             variable=self.vars["sequence_use_simple_actions"],
-        ).grid(row=0, column=3, sticky="w", padx=4, pady=4)
-        ttk.Checkbutton(
+        )
+        use_simple_actions_check.grid(row=0, column=3, sticky="w", padx=4, pady=4)
+        self._add_tooltip(use_simple_actions_check, "Set the sequence to use G Hub simple action playback mode.")
+
+        show_up_down_check = ttk.Checkbutton(
             meta,
             text="Show up/down",
             variable=self.vars["show_up_down"],
-        ).grid(row=0, column=4, sticky="w", padx=4, pady=4)
-        ttk.Checkbutton(
+        )
+        show_up_down_check.grid(row=0, column=4, sticky="w", padx=4, pady=4)
+        self._add_tooltip(show_up_down_check, "Tell G Hub to show key/button up and down events in the sequence.")
+
+        paste_state_check = ttk.Checkbutton(
             meta,
             text="Paste includes up/down state",
             variable=self.vars["paste_include_state"],
-        ).grid(row=0, column=5, sticky="w", padx=4, pady=4)
+        )
+        paste_state_check.grid(row=0, column=5, sticky="w", padx=4, pady=4)
+        self._add_tooltip(
+            paste_state_check,
+            "When pasting over a component, include the copied up/down press state instead of preserving the target state.",
+        )
         ttk.Label(meta, textvariable=self.sequence_info_var).grid(
             row=1, column=0, columnspan=6, sticky="w", padx=4, pady=(0, 4)
         )
@@ -760,11 +799,13 @@ class GHubMacroBrowserApp:
             textvariable=self.vars["component_hid_usage"],
         ).grid(row=2, column=1, sticky="ew", padx=4, pady=4)
 
-        ttk.Checkbutton(
+        key_down_check = ttk.Checkbutton(
             self.keyboard_editor,
             text="Key down event",
             variable=self.vars["component_is_down"],
-        ).grid(row=3, column=0, columnspan=2, sticky="w", padx=4, pady=4)
+        )
+        key_down_check.grid(row=3, column=0, columnspan=2, sticky="w", padx=4, pady=4)
+        self._add_tooltip(key_down_check, "Checked means this keyboard component is a key-down event; unchecked means key-up.")
 
         self.delay_editor = ttk.LabelFrame(editor, text="Delay", padding=6)
         self.delay_editor.grid(row=3, column=0, columnspan=2, sticky="ew", padx=4, pady=4)
@@ -783,11 +824,16 @@ class GHubMacroBrowserApp:
         ttk.Entry(self.mouse_editor, textvariable=self.vars["component_mouse_usage"]).grid(
             row=0, column=1, sticky="ew", padx=4, pady=4
         )
-        ttk.Checkbutton(
+        button_down_check = ttk.Checkbutton(
             self.mouse_editor,
             text="Button down event",
             variable=self.vars["component_is_down"],
-        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=4, pady=4)
+        )
+        button_down_check.grid(row=1, column=0, columnspan=2, sticky="w", padx=4, pady=4)
+        self._add_tooltip(
+            button_down_check,
+            "Checked means this mouse component is a button-down event; unchecked means button-up.",
+        )
 
         actions = ttk.Frame(editor)
         actions.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(8, 0))
@@ -956,11 +1002,13 @@ class GHubMacroBrowserApp:
         for col in range(4):
             modifier_frame.columnconfigure(col, weight=1)
         for idx, (name, usage) in enumerate(COMMON_MODIFIERS):
-            ttk.Checkbutton(
+            modifier_check = ttk.Checkbutton(
                 modifier_frame,
                 text=f"{name} ({usage})",
                 variable=self.keystroke_modifier_vars[usage],
-            ).grid(row=idx // 4, column=idx % 4, sticky="w", padx=4, pady=4)
+            )
+            modifier_check.grid(row=idx // 4, column=idx % 4, sticky="w", padx=4, pady=4)
+            self._add_tooltip(modifier_check, f"Include {name} as a modifier in the keystroke macro.")
 
         update_keystroke_button = ttk.Button(frame, text="Update Keystroke Macro", command=self.update_keystroke_macro)
         update_keystroke_button.grid(row=4, column=0, sticky="w", padx=4, pady=8)
@@ -997,11 +1045,16 @@ class GHubMacroBrowserApp:
         )
         start_append_button.grid(row=1, column=1, sticky="w", padx=4, pady=6)
         self._add_tooltip(start_append_button, "Record live key input and append it to the selected sequence.")
-        ttk.Checkbutton(
+        record_actual_timing_check = ttk.Checkbutton(
             frame,
             text="Use actual input timing",
             variable=self.vars["record_use_actual_delay"],
-        ).grid(row=2, column=0, sticky="w", padx=4, pady=(4, 0))
+        )
+        record_actual_timing_check.grid(row=2, column=0, sticky="w", padx=4, pady=(4, 0))
+        self._add_tooltip(
+            record_actual_timing_check,
+            "When enabled, recording uses your real key timing unless Use default delay is checked on the sequence.",
+        )
 
         ttk.Label(
             frame,
@@ -1046,6 +1099,9 @@ class GHubMacroBrowserApp:
     def _focused_widget(self):
         return self.root.focus_get()
 
+    def _focus_is_macro_list(self) -> bool:
+        return self._focused_widget() == self.macro_listbox
+
     def _focus_is_component_tree(self) -> bool:
         return self._focused_widget() == self.component_tree
 
@@ -1070,6 +1126,9 @@ class GHubMacroBrowserApp:
         return None
 
     def on_delete_shortcut(self, event=None):
+        if self._focus_is_macro_list():
+            self.delete_selected_macro()
+            return "break"
         if self._focus_is_component_tree():
             self.delete_component()
             return "break"
@@ -1745,10 +1804,10 @@ class GHubMacroBrowserApp:
                 "sequence": {
                     "components": [],
                     "defaultDelay": 50,
+                    "useDefaultDelay": True,
+                    "useSimpleActions": True,
                 },
                 "toggleSequence": {},
-                "useDefaultDelay": True,
-                "useSimpleActions": True,
                 "type": "SEQUENCE",
             },
             "name": self._generate_unique_macro_name(application_id),
@@ -1800,10 +1859,67 @@ class GHubMacroBrowserApp:
             record = self.current_record()
             if record:
                 self.populate_form(record)
+            self.root.after_idle(self._focus_macro_name_entry)
 
         self.assignment_status_var.set(
             f"Created {new_node['name']} in {anchor_record.get('application_name', '<unknown application>')}."
         )
+
+    def _focus_macro_name_entry(self) -> None:
+        """Focus the macro name field and select its contents for quick renaming."""
+        entry = getattr(self, "macro_name_entry", None)
+        if entry is None:
+            return
+        entry.focus_set()
+        entry.selection_range(0, tk.END)
+        entry.icursor(tk.END)
+
+    def delete_selected_macro(self) -> None:
+        """Delete the selected editable macro and remove any assignments pointing to it."""
+        record = self.current_record()
+        if not record:
+            messagebox.showinfo("No macro", "Select a macro first.")
+            return
+        parent_list = record.get("parent_list")
+        parent_list_index = record.get("parent_list_index")
+        if (
+            parent_list is None
+            or parent_list_index is None
+            or record["node"].get("readOnly", False)
+        ):
+            messagebox.showinfo("Cannot delete", "The selected macro is not in an editable location.")
+            return
+
+        macro_name = record.get("name", "<unnamed macro>")
+        if not messagebox.askyesno(
+            "Delete macro",
+            f"Delete macro '{macro_name}'?\n\nAny assignments pointing to it will be removed too.",
+        ):
+            return
+
+        selected_real_index = self.current_real_index
+        self._push_undo_state()
+        parent_list.pop(parent_list_index)
+        removed_assignments = self._remove_assignments_for_card_ids({record["id"]})
+
+        self.mark_dirty()
+        self.applications_by_id = self._build_application_map()
+        self.profile_assignments_by_card_id = self._build_profile_assignment_map()
+        self.macro_records = self._collect_macro_records()
+        self.filtered_indices = []
+        self.current_real_index = None
+        self.current_component_index = None
+        self.refresh_macro_list()
+
+        if self.macro_records:
+            target_index = 0
+            if selected_real_index is not None:
+                target_index = min(selected_real_index, len(self.macro_records) - 1)
+            self.current_real_index = target_index
+            self.refresh_macro_list()
+
+        removed_text = f" Removed {removed_assignments} assignment(s)." if removed_assignments else ""
+        self.assignment_status_var.set(f"Deleted {macro_name}.{removed_text}")
 
     def _update_status(self) -> None:
         """Refresh the window status line and save button state."""
@@ -2655,6 +2771,8 @@ class GHubMacroBrowserApp:
 
     def start_keystroke_recording(self, mode: str) -> None:
         """Open the recorder window and capture live key presses into sequence components."""
+        if not self.apply_current_edits():
+            return
         record = self.current_record()
         if not record:
             return
@@ -2703,7 +2821,9 @@ class GHubMacroBrowserApp:
         if self.record_last_event_time is None:
             self.record_last_event_time = now
             return
-        if self.vars["record_use_actual_delay"].get():
+        if self.vars["sequence_use_default_delay"].get():
+            elapsed_ms = self._current_sequence_default_delay()
+        elif self.vars["record_use_actual_delay"].get():
             elapsed_ms = int(round((now - self.record_last_event_time) * 1000))
         else:
             elapsed_ms = self._current_sequence_default_delay()
