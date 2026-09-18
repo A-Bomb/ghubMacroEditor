@@ -14,10 +14,6 @@ A refresher for browsing, editing, recording, organizing, and assigning G Hub ma
 
 The browser edits settings; it does not run or test macros itself.
 
-## What does Open JSON open?
-
-**Yes - it can open the JSON extracted from G Hub's `settings.db`.** More precisely, it expects a G Hub settings JSON document containing macro records, typically together with applications, profiles, and assignments. It is not an importer for an arbitrary list of keystrokes or a bare `macro` object.
-
 The two Open buttons load the same kind of data through different routes:
 
 | Button | What it reads | Where Save writes |
