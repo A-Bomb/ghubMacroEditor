@@ -18,7 +18,7 @@ The two Open buttons load the same kind of data through different routes:
 
 | Button | What it reads | Where Save writes |
 | --- | --- | --- |
-| **Open JSON** | A standalone UTF-8 JSON file, such as `ghub.json` or an export created with Save As | Back to that JSON file |
+| **Open JSON** | An export from the settings.db created with Save As from this program or copied from the db file through sqlite or similar | Back to that JSON file |
 | **Open settings.db** | The JSON stored in the first `DATA` row's `FILE` field inside the SQLite database | Back to that database row |
 
 To make a standalone JSON copy, open **settings.db**, then click **Save As** and choose a `.json` filename. You can reopen that file later with **Open JSON**. The name does not have to be `ghub.json`.
